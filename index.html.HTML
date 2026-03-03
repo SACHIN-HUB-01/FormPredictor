@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FormPredictor Pro Engine</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:'Inter',sans-serif;
+}
+
+body{
+  background:#0b0f19;
+  color:#fff;
+  padding:40px;
+}
+
+.container{
+  max-width:1000px;
+  margin:auto;
+}
+
+h1{
+  text-align:center;
+  margin-bottom:30px;
+}
+
+.input-section{
+  display:flex;
+  gap:20px;
+  margin-bottom:20px;
+}
+
+input{
+  flex:1;
+  padding:12px;
+  border-radius:8px;
+  border:1px solid #1f2937;
+  background:#111827;
+  color:#fff;
+  text-align:center;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:8px;
+  background:#3b82f6;
+  color:#fff;
+  font-weight:600;
+  cursor:pointer;
+  margin-bottom:30px;
+}
+
+button:active{
+  transform: scale(0.97);
+}
+
+.result-section{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:30px;
+}
+
+.team-box{
+  width:45%;
+  text-align:center;
+}
+
+.circle{
+  width:150px;
+  height:150px;
+  border-radius:50%;
+  background:conic-gradient(#3b82f6 0deg,#1f2937 0deg);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin:auto;
+  transition: background 0.6s ease, transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.circle span{
+  font-size:24px;
+  font-weight:700;
+}
+
+.progress-bar{
+  margin-top:15px;
+  height:10px;
+  background:#1f2937;
+  border-radius:8px;
+  overflow:hidden;
+}
+
+.progress{
+  height:100%;
+  width:0%;
+  background:#22d3ee;
+  transition: width 0.6s ease;
+}
+
+.confidence{
+  text-align:center;
+  font-size:18px;
+  margin-bottom:30px;
+  font-weight:600;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th,td{
+  padding:10px;
+  border:1px solid #1f2937;
+  text-align:center;
+}
+
+th{
+  background:#111827;
+}
+
+.clear-btn{
+  margin-top:15px;
+  background:#dc2626;
+}
+
+/* glow */
+.winner-glow{
+  box-shadow: 0 0 25px #22c55e, 0 0 50px #22c55e;
+  transform: scale(1.03);
+}
+
+.loser-red{
+  box-shadow: 0 0 25px #ef4444, 0 0 50px #ef4444;
+  transform: scale(1.01);
+}
+
+/* winner text colors */
+.winnerA{ color:#22c55e; }
+.winnerB{ color:#3b82f6; }
+.draw{ color:#f59e0b; }
+
+/* =========================
+   MOBILE RESPONSIVE (safe)
+   ========================= */
+#historyTable{ width:100%; }
+
+@media (max-width: 900px){
+  body{ padding:18px; }
+  .container{ max-width:100%; padding:0; }
+}
+
+@media (max-width: 700px){
+  body{ padding:14px; }
+  .container{ max-width:100%; }
+
+  .input-section{
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  input, select, button{ width:100%; }
+
+  .result-section{
+    flex-direction: column;
+    gap: 18px;
+    align-items: stretch;
+  }
+
+  .team-box{ width:100%; }
+
+  .circle{
+    width:120px;
+    height:120px;
+  }
+
+  .circle span{ font-size:22px; }
+
+  h1{
+    font-size:22px;
+    margin-bottom:18px;
+  }
+
+  #summaryCard{
+    border-radius:14px !important;
+    padding:14px !important;
+    margin:14px 0 !important;
+  }
+
+  #winnerLine{ font-size:15px !important; }
+  #scoreLine{ font-size:13px !important; }
+  #summaryRisk{ font-size:13px !important; }
+  #summaryMomentum{ font-size:12px !important; line-height:1.5 !important; }
+  #aiMessage{ font-size:13px !important; }
+
+  #copyBtn, #waBtn{
+    width:100% !important;
+    display:block;
+    margin-top:10px !important;
+    padding:12px 14px !important;
+    border-radius:12px !important;
+    font-weight:800 !important;
+  }
+
+  #historyTable{
+    display:block;
+    overflow-x:auto;
+    white-space:nowrap;
+  }
+}
+
+@media (max-width: 420px){
+  .circle{ width:105px; height:105px; }
+  .circle span{ font-size:20px; }
+  h1{ font-size:20px; }
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>FormPredictor — Match Form Analyzer</h1>
+
+<div class="input-section">
+  <input type="text" id="teamA" placeholder="Team A Form (WWDLW)">
+  <input type="text" id="teamB" placeholder="Team B Form (LDWLW)">
+</div>
+
+<label style="display:block; margin-bottom:15px;">
+  <input type="checkbox" id="homeAdvantage">
+  Team A Playing at Home (+2 bonus)
+</label>
+
+<label style="display:block; margin:10px 0 8px; text-align:left; opacity:0.9;">
+  Match Type (Weight)
+</label>
+
+<select id="matchType" style="width:100%; padding:12px; border-radius:10px; border:1px solid #1f2937; background:#0f172a; color:#fff; margin-bottom:15px;">
+  <option value="0.8">Friendly (0.8x)</option>
+  <option value="1.0" selected>League (1.0x)</option>
+  <option value="1.2">Knockout (1.2x)</option>
+</select>
+
+<button id="runBtn" onclick="calculate()">Analyze Match</button>
+
+<div id="errorBox" style="margin:14px 0; color:#ef4444; font-weight:600;"></div>
+<div id="heatA" style="margin-top:14px; font-weight:600;"></div>
+<div id="heatB" style="margin-top:8px; font-weight:600;"></div>
+
+<div class="result-section" id="resultsSection">
+  <div class="team-box">
+    <h3>Team A</h3>
+    <div class="circle" id="circleA"><span id="percentA">0%</span></div>
+    <div class="progress-bar"><div class="progress" id="barA"></div></div>
+  </div>
+
+  <div class="team-box">
+    <h3>Team B</h3>
+    <div class="circle" id="circleB"><span id="percentB">0%</span></div>
+    <div class="progress-bar"><div class="progress" id="barB"></div></div>
+  </div>
+</div>
+
+<div class="confidence" id="confidenceText"></div>
+<div id="riskText" style="margin-top:8px; font-weight:700;"></div>
+<div id="momentumA" style="margin-top:8px; font-weight:700;"></div>
+<div id="momentumB" style="margin-top:6px; font-weight:700;"></div>
+
+<div id="aiMessage" style="margin:10px 0 25px; font-size:14px; color:#cbd5e1; line-height:1.6;"></div>
+
+<div id="summaryCard" style="display:none; margin:18px 0; padding:16px; border-radius:12px; background:#0f172a; border:1px solid #1f2937;">
+  <div id="winnerLine" style="font-weight:800; font-size:16px; margin-bottom:8px;"></div>
+  <div id="scoreLine" style="color:#cbd5e1; margin-bottom:8px;"></div>
+
+  <div id="summaryRisk" style="margin-bottom:6px; font-weight:700;"></div>
+  <div id="summaryMomentum" style="margin-bottom:10px; color:#cbd5e1;"></div>
+
+  <div id="extraLine" style="color:#94a3b8; font-size:13px; line-height:1.6; white-space:pre-line;"></div>
+
+  <button id="copyBtn" disabled style="margin-top:12px; padding:8px 14px; border-radius:8px; border:none; background:#3b82f6; color:white; cursor:pointer;">
+    Copy Summary
+  </button>
+
+  <button id="waBtn" disabled style="margin-top:8px; padding:8px 14px; border-radius:8px; border:none; background:#22c55e; color:white; cursor:pointer;">
+    Share on WhatsApp
+  </button>
+</div>
+
+<h2>Analysis History</h2>
+
+<table id="historyTable">
+<thead>
+<tr>
+<th>Team A</th>
+<th>Team B</th>
+<th>A %</th>
+<th>B %</th>
+<th>Strength</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+<button class="clear-btn" onclick="clearHistory()">Clear History</button>
+
+</div>
+
+<script>
+function getPoints(form){
+  let points=0;
+  for(let i=0;i<form.length;i++){
+    if(form[i]==="W") points+=3;
+    else if(form[i]==="D") points+=1;
+  }
+  return points;
+}
+
+function animateNumber(el, to){
+  let start = 0;
+  let duration = 700;
+  let startTime = null;
+  function step(timestamp){
+    if(!startTime) startTime = timestamp;
+    let progress = Math.min((timestamp - startTime) / duration, 1);
+    let value = (start + (to - start) * progress).toFixed(1);
+    el.innerText = value + "%";
+    if(progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function formHeat(form){
+  let out = "";
+  for(let i=0;i<form.length;i++){
+    if(form[i]==="W") out += "🔥";
+    else if(form[i]==="D") out += "🟡";
+    else if(form[i]==="L") out += "⚪";
+  }
+  return out;
+}
+
+function momentumLabel(form){
+  let score = 0;
+  for(let i=0;i<form.length;i++){
+    if(form[i] === "W") score += 3;
+    else if(form[i] === "D") score += 1;
+  }
+  if(score >= 11) return {label: "HIGH 🔥", color:"#22c55e", score};
+  if(score >= 6)  return {label: "MEDIUM 🟡", color:"#f59e0b", score};
+  return {label: "LOW ❄️", color:"#ef4444", score};
+}
+
+function calculate(){
+  let teamA=document.getElementById("teamA").value.toUpperCase();
+  let teamB=document.getElementById("teamB").value.toUpperCase();
+
+  document.getElementById("errorBox").innerText = "";
+  teamA = teamA.replace(/\s+/g, "");
+  teamB = teamB.replace(/\s+/g, "");
+
+  if(teamA.length !== 5 || teamB.length !== 5){
+    document.getElementById("errorBox").innerText =
+      "⚠ Please enter exactly 5 characters (Example: WWDLW).";
+    return;
+  }
+
+  if(!/^[WDL]{5}$/.test(teamA) || !/^[WDL]{5}$/.test(teamB)){
+    document.getElementById("errorBox").innerText =
+      "⚠ OHH ! PLEASE ENTER VALID KEY.";
+    return;
+  }
+
+  let pointsA=getPoints(teamA);
+  let pointsB=getPoints(teamB);
+
+  if(document.getElementById("homeAdvantage").checked){
+    pointsA += 2;
+  }
+
+  let weight = parseFloat(document.getElementById("matchType").value);
+  pointsA = pointsA * weight;
+  pointsB = pointsB * weight;
+
+  let total=pointsA+pointsB;
+  if(total===0) return;
+
+  let percentA=((pointsA/total)*100).toFixed(1);
+  let percentB=((pointsB/total)*100).toFixed(1);
+
+  animateNumber(document.getElementById("percentA"), parseFloat(percentA));
+  animateNumber(document.getElementById("percentB"), parseFloat(percentB));
+
+  document.getElementById("barA").style.width=percentA+"%";
+  document.getElementById("barB").style.width=percentB+"%";
+
+  document.getElementById("heatA").innerText = "Team A Form Heat: " + formHeat(teamA);
+  document.getElementById("heatB").innerText = "Team B Form Heat: " + formHeat(teamB);
+
+  let mA = momentumLabel(teamA);
+  let mB = momentumLabel(teamB);
+
+  let maEl = document.getElementById("momentumA");
+  let mbEl = document.getElementById("momentumB");
+  maEl.innerText = `Team A Momentum: ${mA.label} (Score: ${mA.score}/15)`;
+  mbEl.innerText = `Team B Momentum: ${mB.label} (Score: ${mB.score}/15)`;
+  maEl.style.color = mA.color;
+  mbEl.style.color = mB.color;
+
+  document.getElementById("circleA").style.background=
+    `conic-gradient(#3b82f6 ${percentA*3.6}deg,#1f2937 0deg)`;
+  document.getElementById("circleB").style.background=
+    `conic-gradient(#22d3ee ${percentB*3.6}deg,#1f2937 0deg)`;
+
+  document.getElementById("circleA").classList.remove("winner-glow","loser-red");
+  document.getElementById("circleB").classList.remove("winner-glow","loser-red");
+
+  if(percentA > percentB){
+    document.getElementById("circleA").classList.add("winner-glow");
+    document.getElementById("circleB").classList.add("loser-red");
+  } else if(percentB > percentA){
+    document.getElementById("circleB").classList.add("winner-glow");
+    document.getElementById("circleA").classList.add("loser-red");
+  }
+
+  let diff=Math.abs(percentA-percentB);
+  let confidence="", confColor="";
+
+  let risk = "", riskColor = "";
+  if(diff < 10){ risk = "HIGH RISK 🔴"; riskColor = "#ef4444"; }
+  else if(diff < 25){ risk = "MEDIUM RISK 🟡"; riskColor = "#f59e0b"; }
+  else { risk = "LOW RISK 🟢"; riskColor = "#22c55e"; }
+
+  if(diff<10){ confidence="LOW"; confColor="#ef4444"; }
+  else if(diff<25){ confidence="MEDIUM"; confColor="#f59e0b"; }
+  else { confidence="HIGH"; confColor="#22c55e"; }
+
+  let riskText = document.getElementById("riskText");
+  riskText.innerText = "Risk Level: " + risk;
+  riskText.style.color = riskColor;
+
+  let confText=document.getElementById("confidenceText");
+  confText.innerText="Prediction Strength: "+confidence;
+  confText.style.color=confColor;
+
+  // AI Message
+  let msgParts = [];
+  let w = parseFloat(document.getElementById("matchType").value);
+  let weightLabel = (w === 0.8) ? "Friendly" : (w === 1.2 ? "Knockout" : "League");
+  msgParts.push(`Match type: ${weightLabel}.`);
+
+  if(diff >= 25){
+    msgParts.push("One side shows clear dominance based on recent form and momentum.");
+  } else if(diff >= 12){
+    msgParts.push("This match has a moderate gap in recent performance. The stronger team has an advantage but risk still exists.");
+  } else {
+    msgParts.push("This match appears competitive and unpredictable. Both teams show similar recent form.");
+  }
+
+  if(risk.includes("HIGH") && Math.abs(mA.score - mB.score) <= 3){
+    msgParts.push("⚠️ High upset potential. Consider cautious decision-making.");
+  }
+
+  if(mA.score - mB.score >= 6){
+    msgParts.push("Team A has strong positive momentum and current trend advantage.");
+  } else if(mB.score - mA.score >= 6){
+    msgParts.push("Team B shows strong recent momentum and may outperform expectations.");
+  }
+
+  if(document.getElementById("homeAdvantage").checked){
+    msgParts.push("Home advantage is boosting Team A slightly.");
+  }
+
+  msgParts.push(`Confidence: ${confidence}.`);
+  msgParts.push(`Team A Momentum: ${mA.label} (${mA.score}/15).`);
+  msgParts.push(`Team B Momentum: ${mB.label} (${mB.score}/15).`);
+  msgParts.push(`Risk Level: ${risk}.`);
+  msgParts.push(`Team A Form Heat: ${formHeat(teamA)}`);
+  msgParts.push(`Team B Form Heat: ${formHeat(teamB)}`);
+
+  msgParts.push("Note: This analysis is based on recent team performance, statistical form patterns, and momentum trends. Results are intended to support informed decision-making and may vary depending on real match conditions.");
+
+  document.getElementById("aiMessage").innerText = msgParts.join(" ");
+
+  // Summary card
+  document.getElementById("summaryCard").style.display = "block";
+  document.getElementById("copyBtn").disabled = false;
+  document.getElementById("waBtn").disabled = false;
+
+  let winner = "DRAW";
+  let winnerClass = "draw";
+  if (percentA > percentB){ winner = "TEAM A"; winnerClass = "winnerA"; }
+  else if (percentB > percentA){ winner = "TEAM B"; winnerClass = "winnerB"; }
+
+  let winnerLine = document.getElementById("winnerLine");
+  winnerLine.innerText = `🏆 Suggested Side: ${winner}`;
+  winnerLine.className = winnerClass;
+
+  document.getElementById("scoreLine").innerText = `Team A: ${percentA}%  |  Team B: ${percentB}%`;
+
+  let sr = document.getElementById("summaryRisk");
+  sr.innerText = "Risk Level: " + risk;
+  sr.style.color = riskColor;
+
+  document.getElementById("summaryMomentum").innerText =
+    `Momentum — Team A: ${mA.label} (${mA.score}/15) | Team B: ${mB.label} (${mB.score}/15)`;
+
+  let heatA = document.getElementById("heatA").innerText;
+  let heatB = document.getElementById("heatB").innerText;
+  let aiMsg = document.getElementById("aiMessage").innerText;
+  let confMsg = document.getElementById("confidenceText").innerText;
+
+  document.getElementById("extraLine").innerText =
+    confMsg + "\n" + aiMsg + "\n" + heatA + "\n" + heatB;
+
+  // Share text
+  const shareText =
+`⚡ FormPredictor Match Analysis ⚡
+
+🏆 Suggested Side: ${winner}
+Team A: ${percentA}%
+Team B: ${percentB}%
+
+${confMsg}
+Risk Level: ${risk}
+Momentum — A: ${mA.label} (${mA.score}/15) | B: ${mB.label} (${mB.score}/15)
+
+👉 Get more analyses:
+www.formpredictor.com`;
+
+  // Copy
+  document.getElementById("copyBtn").onclick = async function(){
+    try{
+      await navigator.clipboard.writeText(shareText);
+      const btn = this;
+      const oldText = btn.innerText;
+      btn.innerText = "Copied ✅";
+      btn.disabled = true;
+      setTimeout(()=>{
+        btn.innerText = oldText;
+        btn.disabled = false;
+      }, 2000);
+    }catch(err){
+      alert("Copy failed. Please try again.");
+    }
+  };
+
+  // WhatsApp
+  document.getElementById("waBtn").onclick = function(){
+    const btn = this;
+    const oldText = btn.innerText;
+
+    btn.innerText = "Opening… ✅";
+    btn.disabled = true;
+
+    const url = "https://wa.me/?text=" + encodeURIComponent(shareText);
+    window.open(url, "_blank");
+
+    setTimeout(()=>{
+      btn.innerText = oldText;
+      btn.disabled = false;
+    }, 2000);
+  };
+
+  // Auto scroll to results
+  setTimeout(() => {
+    const r = document.getElementById("resultsSection");
+    if (r) r.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 150);
+
+  saveHistory(teamA,teamB,percentA,percentB,confidence);
+}
+
+function saveHistory(a,b,pa,pb,conf){
+  let table=document.querySelector("#historyTable tbody");
+  let row=table.insertRow();
+  row.innerHTML=`<td>${a}</td><td>${b}</td><td>${pa}%</td><td>${pb}%</td><td>${conf}</td>`;
+
+  let history=JSON.parse(localStorage.getItem("formPredictorHistory"))||[];
+  history.push({a,b,pa,pb,conf});
+  localStorage.setItem("formPredictorHistory",JSON.stringify(history));
+}
+
+function loadHistory(){
+  let history=JSON.parse(localStorage.getItem("formPredictorHistory"))||[];
+  let table=document.querySelector("#historyTable tbody");
+  history.forEach(item=>{
+    let row=table.insertRow();
+    row.innerHTML=`<td>${item.a}</td><td>${item.b}</td><td>${item.pa}%</td><td>${item.pb}%</td><td>${item.conf}</td>`;
+  });
+}
+
+function clearHistory(){
+  localStorage.removeItem("formPredictorHistory");
+  location.reload();
+}
+
+loadHistory();
+</script>
+</body>
+</html>
